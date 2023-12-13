@@ -1,0 +1,5 @@
+sample_id	id	abundance	taxonomy	file
+TARA_ARC_108	TARA_ARC_108_MAG_00174	20	Marinobacter	tests/gems/TARA_ARC_108_MAG_00174.xml
+TARA_ARC_108	TARA_ARC_108_MAG_00083	40	Sulfitobacter	tests/gems/TARA_ARC_108_MAG_00083.xml
+TARA_ARC_108	TARA_ARC_108_MAG_00080	30	Alteromonas	tests/gems/TARA_ARC_108_MAG_00080.xml
+TARA_ARC_108	TARA_ARC_108_MAG_00201	10	Polaribacter	tests/gems/TARA_ARC_108_MAG_00201.xml
