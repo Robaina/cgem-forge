@@ -8,7 +8,7 @@ params.medium_id = ""
 
 genomes = Channel.fromPath("${params.genomes_dir}/*")
 
-process carveme {
+process ReconstructGEM {
     publishDir "${params.outdir}/gems", mode: 'copy'
 
     input:
@@ -31,5 +31,5 @@ process carveme {
 
 workflow {
     genomes.view().set { genomes_ch }
-    carveme(genomes_ch)
+    ReconstructGEM(genomes_ch)
 }
