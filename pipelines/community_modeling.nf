@@ -1,32 +1,30 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl = 2
 
-params.gems_dir = ""
-params.abundances = ""
-params.sample_id = ""
-params.media_file = ""
+// Define parameters with default values where appropriate
+params.gems_dir = params.gems_dir ?: error("No genomes directory provided")
+params.abundances = params.abundances ?: error("No abundances file provided")
+params.sample_id = params.sample_id ?: error("No sample ID provided")
+params.media_file = params.media_file ?: error("No media file provided")
 params.outdir = "./results"
-params.out_taxatable = ""
+params.out_taxatable = "taxa_table.tsv"
+params.out_exchanges = "exchanges.tsv"
+params.out_elasticities = "elasticities.tsv"
 params.growth_tradeoff = 0.5
-params.cutoff = 0.01
+params.abundance_cutoff = 0.01
 params.threads = 10
 params.solver = "gurobi"
+params.exchanges = true
+params.elasticities = false
 
-Channel
-    .fromPath(params.abundances)
-    .set { abundances_ch }
+// Channels
+Channel.fromPath(params.abundances).set { abundances_ch }
+Channel.fromPath("${params.gems_dir}/*").set { gems_ch }
+Channel.fromPath("${params.media_file}").set { marine_media_ch }
 
-Channel
-    .fromPath("${params.gems_dir}/*")
-    .set { gems_ch }
-
-Channel
-    .fromPath('tests/results/marine_media.tsv')
-    .set { marine_media_ch }
-
-
+// Processes
 process BuildTaxaTable {
-    publishDir params.outdir, mode: 'copy'
+    publishDir params.outdir, mode: "copy"
 
     input:
     path abundances
@@ -46,69 +44,75 @@ process BuildTaxaTable {
 }
 
 process BuildCommunityGEM {
-    publishDir params.outdir, mode: 'copy'
+    publishDir params.outdir, mode: "copy"
 
     input:
     path taxaTable from BuildTaxaTable.out
 
     output:
-    path "${params.outdir}/manifest.csv"
-    path "${params.outdir}/*.pickle"
+    path "manifest.csv"
+    path "*.pickle"
 
     script:
     """
     python src/build_gems.py \
         ${taxaTable} \
-        --out_folder ${params.outdir} \
-        --cutoff ${params.cutoff} \
+        --out_folder . \
+        --cutoff ${params.abundance_cutoff} \
         --threads ${params.threads} \
         --solver ${params.solver}
     """
 }
 
 process GetExchanges {
-    publishDir params.outdir, mode: 'copy'
+    publishDir params.outdir, mode: "copy"
 
     input:
     path manifest from BuildGems.out.collect()
     path marine_media
 
     output:
-    path "tests/results/exchanges.tsv"
+    path "${params.out_exchanges}"
 
     script:
     """
     python src/get_exchanges.py \
         ${manifest} \
-        tests/results \
+        . \
         ${marine_media} \
         --tradeoff ${params.growth_tradeoff} \
         --threads ${params.threads} \
-        --output tests/results/exchanges.tsv
+        --output ${params.out_exchanges}
     """
 }
 
 process GetElasticities {
-    publishDir params.outdir, mode: 'copy'
+    publishDir params.outdir, mode: "copy"
 
     input:
     path cgem_pickle
 
     output:
-    path "tests/results/elasticities.tsv"
+    path "${params.out_elasticities}"
 
     script:
     """
     python src/get_elasticities.py \
         ${cgem_pickle} \
         --fraction ${params.growth_tradeoff} \
-        --output tests/results/elasticities.tsv
+        --output ${params.out_elasticities}
     """
 }
 
+// Workflow
 workflow {
     BuildTaxaTable(abundances_ch, gems_ch)
     BuildCommunityGEM(BuildTaxaTable.out)
-    GetExchanges(BuildCommunityGEM.out.collect(), marine_media_ch)
-    GetElasticities(BuildCommunityGEM.out.collect { it.name.endsWith('.pickle') })
+    if (params.exchanges) {
+        GetExchanges(BuildCommunityGEM.out.collect(), marine_media_ch)
+
+    }
+    if (params.elasticities) {
+        GetElasticities(BuildCommunityGEM.out.collect { it.name.endsWith('.pickle') })
+    }
 }

@@ -1,10 +1,11 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl = 2
 
-params.genomes_dir = ""
-params.media_file = ""
+params.genomes_dir = params.genomes_dir ?: error("No genomes directory provided")
+params.media_file = params.media_file ?: error("No media file provided")
+params.medium_id = params.medium_id ?: error("No medium ID provided")
+params.universe = params.universe ?: error("No universe file provided")
 params.outdir = "./results"
-params.medium_id = ""
 
 genomes = Channel.fromPath("${params.genomes_dir}/*")
 
