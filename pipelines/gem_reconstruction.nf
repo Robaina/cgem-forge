@@ -7,7 +7,7 @@ params.medium_id = params.medium_id ?: error("No medium ID provided")
 params.universe = params.universe ?: error("No universe file provided")
 params.outdir = "./results"
 
-genomes = Channel.fromPath("${params.genomes_dir}/*")
+genomes = Channel.fromPath("${params.genomes_dir}/*.fasta")
 
 process ReconstructGEM {
     publishDir "${params.outdir}/gems", mode: 'copy'

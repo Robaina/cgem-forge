@@ -16,6 +16,7 @@ params.threads = 10
 params.solver = "gurobi"
 params.exchanges = true
 params.elasticities = false
+params.scripts_dir = "./src"
 
 // Channels
 Channel.fromPath(params.abundances).set { abundances_ch }
@@ -31,14 +32,14 @@ process BuildTaxaTable {
     path gems
 
     output:
-    path "${params.out_taxatable}"
+    path "${params.out_taxatable}", emit: taxaTable
 
     script:
     """
-    python src/build_taxa_table.py \
+    python ${params.scripts_dir}/build_taxa_table.py \
         "${params.sample_id}" \
-        ${abundances} \
-        ${gems} \
+        ${params.abundances} \
+        ${params.gems_dir} \
         --output ${params.out_taxatable}
     """
 }
@@ -47,15 +48,15 @@ process BuildCommunityGEM {
     publishDir params.outdir, mode: "copy"
 
     input:
-    path taxaTable from BuildTaxaTable.out
+    path taxaTable
 
     output:
-    path "manifest.csv"
-    path "*.pickle"
+    path "manifest.csv", emit: cgem_manifest
+    path "*.pickle", emit: cgem_pickle
 
     script:
     """
-    python src/build_gems.py \
+    python ${params.scripts_dir}/build_cgem.py \
         ${taxaTable} \
         --out_folder . \
         --cutoff ${params.abundance_cutoff} \
@@ -68,17 +69,17 @@ process GetExchanges {
     publishDir params.outdir, mode: "copy"
 
     input:
-    path manifest from BuildGems.out.collect()
+    path manifest
     path marine_media
 
     output:
-    path "${params.out_exchanges}"
+    path "${params.out_exchanges}", emit: exchanges
 
     script:
     """
-    python src/get_exchanges.py \
+    python ${params.scripts_dir}/get_exchanges.py \
         ${manifest} \
-        . \
+        ${params.outdir} \
         ${marine_media} \
         --tradeoff ${params.growth_tradeoff} \
         --threads ${params.threads} \
@@ -93,11 +94,11 @@ process GetElasticities {
     path cgem_pickle
 
     output:
-    path "${params.out_elasticities}"
+    path "${params.out_elasticities}", emit: elasticities
 
     script:
     """
-    python src/get_elasticities.py \
+    python ${params.scripts_dir}/get_elasticities.py \
         ${cgem_pickle} \
         --fraction ${params.growth_tradeoff} \
         --output ${params.out_elasticities}
@@ -107,12 +108,12 @@ process GetElasticities {
 // Workflow
 workflow {
     BuildTaxaTable(abundances_ch, gems_ch)
-    BuildCommunityGEM(BuildTaxaTable.out)
+    BuildCommunityGEM(BuildTaxaTable.out.taxaTable)
     if (params.exchanges) {
-        GetExchanges(BuildCommunityGEM.out.collect(), marine_media_ch)
+        GetExchanges(BuildCommunityGEM.out.cgem_manifest, marine_media_ch)
 
     }
     if (params.elasticities) {
-        GetElasticities(BuildCommunityGEM.out.collect { it.name.endsWith('.pickle') })
+        GetElasticities(BuildCommunityGEM.out.cgem_pickle)
     }
 }

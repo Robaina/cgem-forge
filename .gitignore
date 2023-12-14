@@ -1,1 +1,5 @@
 tests/data/genomes/*
+work
+test_nf
+.nextflow
+.nextflow.log*
