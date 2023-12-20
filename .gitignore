@@ -3,3 +3,5 @@ work
 test_nf
 .nextflow
 .nextflow.log*
+test_*
+tests/gems_scip/*
