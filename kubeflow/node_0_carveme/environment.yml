@@ -1,0 +1,12 @@
+name: carveme
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - diamond
+  - pyscipopt
+  - pip
+  - pip:
+      - carveme

@@ -5,3 +5,4 @@ test_nf
 .nextflow.log*
 test_*
 tests/gems_scip/*
+build_docker_images.sh
