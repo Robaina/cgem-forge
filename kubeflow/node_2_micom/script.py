@@ -13,21 +13,47 @@ Available subcommands:
 Usage:
     entry_script.py <subcommand> [options]
 """
-
+import os
 import argparse
 import subprocess
+
+PARENT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def get_medium_from_media_db(args):
+    """Extracts exchange reactions for a given medium from a media database."""
+    command = [
+        "python",
+        f"{PARENT_DIR}/get_medium_from_media_db.py",
+        "--media-db",
+        str(args.media_db),
+        "--medium-id",
+        args.medium_id,
+        "--compartment",
+        args.compartment,
+        "--max-uptake",
+        str(args.max_uptake),
+    ]
+    if args.outfile:
+        command += ["--outfile", str(args.outfile)]
+    subprocess.run(command, check=True)
 
 
 def build_taxa_table(args):
     """Builds a taxa table from abundances and genomes."""
     command = [
         "python",
-        f"{args.scripts_dir}/build_taxa_table.py",
+        f"{PARENT_DIR}/build_taxa_table.py",
+        "--sample_id",
         args.sample_id,
+        "--abundances",
         args.abundances,
+        "--gems_dir",
         args.gems_dir,
-        "--output",
+        "--out_taxatable",
         args.out_taxatable,
+        "--base_path",
+        args.base_path,
     ]
     subprocess.run(command, check=True)
 
@@ -36,11 +62,12 @@ def build_cgem(args):
     """Builds a community GEM."""
     command = [
         "python",
-        f"{args.scripts_dir}/build_cgem.py",
+        f"{PARENT_DIR}/build_cgem.py",
+        "--taxa_table",
         args.taxa_table,
-        "--out_folder",
+        "--outdir",
         args.outdir,
-        "--cutoff",
+        "--abundance_cutoff",
         str(args.abundance_cutoff),
         "--threads",
         str(args.threads),
@@ -54,15 +81,18 @@ def get_exchanges(args):
     """Retrieves exchange reactions for a community GEM."""
     command = [
         "python",
-        f"{args.scripts_dir}/get_exchanges.py",
+        f"{PARENT_DIR}/get_exchanges.py",
+        "--manifest",
         args.manifest,
+        "--outdir",
         args.outdir,
+        "--media_file",
         args.media_file,
-        "--tradeoff",
+        "--growth_tradeoff",
         str(args.growth_tradeoff),
         "--threads",
         str(args.threads),
-        "--output",
+        "--out_exchanges",
         args.out_exchanges,
     ]
     subprocess.run(command, check=True)
@@ -72,11 +102,12 @@ def get_elasticities(args):
     """Calculates elasticities for a community GEM."""
     command = [
         "python",
-        f"{args.scripts_dir}/get_elasticities.py",
+        f"{PARENT_DIR}/get_elasticities.py",
+        "--cgem_pickle",
         args.cgem_pickle,
-        "--fraction",
+        "--growth_tradeoff",
         str(args.growth_tradeoff),
-        "--output",
+        "--out_elasticities",
         args.out_elasticities,
     ]
     subprocess.run(command, check=True)
@@ -87,6 +118,33 @@ def main():
         description="Entry point script for micom pipeline operations."
     )
     subparsers = parser.add_subparsers(help="Available commands")
+    # Subcommand: get_medium_from_media_db
+    parser_medium = subparsers.add_parser(
+        "get_medium_from_media_db",
+        help="Extracts exchange reactions for a given medium from a media database.",
+    )
+    parser_medium.add_argument(
+        "--media-db", type=str, required=True, help="Path to the media database."
+    )
+    parser_medium.add_argument(
+        "--medium-id", type=str, required=True, help="ID of the medium to use."
+    )
+    parser_medium.add_argument(
+        "--compartment",
+        type=str,
+        default="e",
+        help="Compartment of exchanges. Defaults to 'e'.",
+    )
+    parser_medium.add_argument(
+        "--max-uptake",
+        type=float,
+        default=1000,
+        help="Maximum uptake rate. Defaults to 1000.",
+    )
+    parser_medium.add_argument(
+        "--outfile", type=str, help="Path to write the extracted medium to. Optional."
+    )
+    parser_medium.set_defaults(func=get_medium_from_media_db)
 
     # Subcommand: build_taxa_table
     parser_taxa = subparsers.add_parser(
@@ -97,13 +155,10 @@ def main():
         "--abundances", required=True, help="Path to abundances file."
     )
     parser_taxa.add_argument(
-        "--gems_dir", required=True, help="Directory containing genome files."
-    )
-    parser_taxa.add_argument(
-        "--scripts_dir", required=True, help="Directory containing scripts."
-    )
-    parser_taxa.add_argument(
         "--out_taxatable", default="taxa_table.tsv", help="Output taxa table file."
+    )
+    parser_taxa.add_argument(
+        "--base_path", help="Base directory path for external file system", default=""
     )
     parser_taxa.set_defaults(func=build_taxa_table)
 
@@ -111,6 +166,9 @@ def main():
     parser_cgem = subparsers.add_parser("build_cgem", help="Builds a community GEM.")
     parser_cgem.add_argument(
         "--taxa_table", required=True, help="Path to the taxa table file."
+    )
+    parser_cgem.add_argument(
+        "--gems_dir", required=True, help="Directory containing genome files."
     )
     parser_cgem.add_argument(
         "--outdir", default="./results", help="Directory to save the output files."
@@ -126,9 +184,6 @@ def main():
     )
     parser_cgem.add_argument(
         "--solver", default="gurobi", help="Solver to use for optimization."
-    )
-    parser_cgem.add_argument(
-        "--scripts_dir", required=True, help="Directory containing scripts."
     )
     parser_cgem.set_defaults(func=build_cgem)
 
@@ -156,9 +211,6 @@ def main():
         default="exchanges.tsv",
         help="Output file for exchange reactions.",
     )
-    parser_exchanges.add_argument(
-        "--scripts_dir", required=True, help="Directory containing scripts."
-    )
     parser_exchanges.set_defaults(func=get_exchanges)
 
     # Subcommand: get_elasticities
@@ -178,9 +230,6 @@ def main():
         "--out_elasticities",
         default="elasticities.tsv",
         help="Output file for elasticities.",
-    )
-    parser_elasticities.add_argument(
-        "--scripts_dir", required=True, help="Directory containing scripts."
     )
     parser_elasticities.set_defaults(func=get_elasticities)
 

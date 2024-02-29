@@ -9,4 +9,8 @@ dependencies:
   - pyscipopt
   - pip
   - pip:
+      - numpy
+      - scipy
+      - sympy
+      - python-libsbml
       - carveme

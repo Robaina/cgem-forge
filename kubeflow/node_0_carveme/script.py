@@ -64,14 +64,14 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--genomes-dir",
+        "--genomes_dir",
         required=True,
         help="Directory containing input faa files for model reconstruction.",
     )
-    parser.add_argument("--media-file", required=True, help="Path to the media file.")
-    parser.add_argument("--medium-id", required=True, help="ID of the medium.")
+    parser.add_argument("--media_file", required=True, help="Path to the media file.")
+    parser.add_argument("--medium_id", required=True, help="ID of the medium.")
     parser.add_argument(
-        "--universe-file", required=True, help="Path to the universe file."
+        "--universe_file", required=True, help="Path to the universe file."
     )
     parser.add_argument(
         "--outdir", default="./results", help="Directory to save the output XML files."
