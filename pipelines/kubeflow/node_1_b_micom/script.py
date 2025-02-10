@@ -152,6 +152,9 @@ def main():
     )
     parser_taxa.add_argument("--sample_id", required=True, help="Sample ID.")
     parser_taxa.add_argument(
+        "--gems_dir", required=True, help="Directory containing genome files."
+    )
+    parser_taxa.add_argument(
         "--abundances", required=True, help="Path to abundances file."
     )
     parser_taxa.add_argument(

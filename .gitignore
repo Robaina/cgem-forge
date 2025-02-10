@@ -6,3 +6,4 @@ test_nf
 test_*
 tests/gems_scip/*
 build_docker_images.sh
+dev.ipynb
