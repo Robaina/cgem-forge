@@ -8,8 +8,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY environment.yml /app/environment.yml
-COPY script.py /app/
+COPY entrypoint.py /app/
 
 RUN micromamba env create -n carveme -f environment.yml
 
-ENTRYPOINT ["micromamba", "run", "-n", "carveme", "python", "script.py"]
+ENTRYPOINT ["micromamba", "run", "-n", "carveme", "python", "entrypoint.py"]

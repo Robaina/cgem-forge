@@ -1,0 +1,5 @@
+genome	universe	media_file	medium_id
+/app/microcom/tests/data/genomes/TARA_ARC_108_MAG_00080.fasta	/app/microcom/data/universes/universal_prokaryote_curated.xml	/app/microcom/data/media/media_db.tsv	MARINE
+/app/microcom/tests/data/genomes/TARA_ARC_108_MAG_00083.fasta	/app/microcom/data/universes/universal_prokaryote_curated.xml	/app/microcom/data/media/media_db.tsv	MARINE
+/app/microcom/tests/data/genomes/TARA_ARC_108_MAG_00174.fasta	/app/microcom/data/universes/universal_prokaryote_curated.xml	/app/microcom/data/media/media_db.tsv	MARINE
+/app/microcom/tests/data/genomes/TARA_ARC_108_MAG_00201.fasta	/app/microcom/data/universes/universal_prokaryote_curated.xml	/app/microcom/data/media/media_db.tsv	MARINE
