@@ -3,20 +3,19 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "microcom"
+name = "cgem-forge"
 version = "0.0.2"
 description = "Reconstructing microbial communities from genomic data"
 license = "Apache-2.0"
 authors = ["Semidán Robaina Estévez <semidan.robaina@gmail.com>"]
 maintainers = ["Semidán Robaina Estévez <semidan.robaina@gmail.com>"]
 readme = "README.md"
-homepage = "https://github.com/robaina/Phycogem"
-repository = "https://github.com/robaina/Phycogem"
-documentation = "https://github.com/robaina/Phycogem"
+homepage = "https://github.com/robaina/cgem-forge"
+repository = "https://github.com/robaina/cgem-forge"
+documentation = "https://github.com/robaina/cgem-forge"
 keywords = [
     "metagenomics",
     "bioinformatics",
-    "phycosphere",
     "genome-scale modeling",
     "metabolism",
     "microbiome",
@@ -27,11 +26,11 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Natural Language :: English",
 ]
-packages = [{ include = "microcom", from = "src" }]
+packages = [{ include = "cgem-forge", from = "src" }]
 [tool.poetry.dependencies]
 python = "^3.8"
 # [tool.poetry.scripts]
-# microcom = "microcom.cli:main"
+# cgem-forge = "cgem-forge.cli:main"
 
 [tool.ruff]
 select = [
@@ -44,9 +43,8 @@ ignore = [
     "E501", # line too long, handled by black
     "B008", # do not perform function calls in argument defaults
     "C901", # mccabe complexity
-    "E999", # match statement is not yet supported
     "W605", # ASCII art, verbatim text
 ]
 
 [tool.ruff.isort]
-known-first-party = ["microcom"]
+known-first-party = ["cgem-forge"]

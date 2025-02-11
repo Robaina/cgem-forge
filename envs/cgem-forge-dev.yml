@@ -1,4 +1,4 @@
-name: microcom-dev
+name: cgem-forge-dev
 channels:
   - defaults
   - bioconda

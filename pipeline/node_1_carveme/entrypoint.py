@@ -141,9 +141,7 @@ def carve_genome(genome_path: str, params: dict) -> None:
         raise
 
 
-def carve_genomes(
-    genome_params: Dict[str, Dict[str, str]], outdir: str, num_processes: int = None
-) -> None:
+def carve_genomes(genome_params: Dict[str, Dict[str, str]], outdir: str) -> None:
     """
     Execute carve commands in parallel for all input files.
     """
@@ -151,10 +149,7 @@ def carve_genomes(
         os.makedirs(outdir, exist_ok=True)
 
         params = {"outdir": outdir, "genome_params": genome_params}
-
         genome_files = list(genome_params.keys())
-
-        # Use sequential processing for all genomes
         for genome_file in genome_files:
             carve_genome(genome_file, params)
 
@@ -190,12 +185,6 @@ def parse_arguments() -> argparse.Namespace:
         parser.add_argument(
             "--outdir", default="./results", help="Directory to save output XML files"
         )
-        parser.add_argument(
-            "--processes",
-            type=int,
-            default=None,
-            help="Number of parallel processes (default: CPU count)",
-        )
 
         args = parser.parse_args()
 
@@ -225,7 +214,6 @@ def main() -> None:
         if args.config:
             # Use config file
             config = read_config_file(args.config)
-            genome_files = config["genome"].tolist()
             genome_params = {}
             for _, row in config.iterrows():
                 genome_params[row["genome"]] = {
@@ -247,7 +235,7 @@ def main() -> None:
                 args.medium_id,
             )
 
-        carve_genomes(genome_params, args.outdir, args.processes)
+        carve_genomes(genome_params, args.outdir)
     except Exception as e:
         print(f"Error in main: {str(e)}")
         sys.exit(1)
