@@ -1,5 +1,3 @@
-# cGEM-FORGE
-
 <div align="center">
    <img src="imgs/logo.png" alt="cGEM-FORGE Logo" style="max-width: 80%;">
 </div>
