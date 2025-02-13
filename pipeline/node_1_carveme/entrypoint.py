@@ -2,243 +2,181 @@
 import argparse
 import os
 import subprocess
-from multiprocessing import Pool
-from functools import partial
-from typing import Dict, List, Union, Tuple
-import sys
-import pandas as pd
+import warnings
+import multiprocessing
 
 
-def read_config_file(config_file: str) -> pd.DataFrame:
-    """
-    Read and validate the configuration TSV file.
-
-    Expected columns: genome, universe, media_file, medium_id
-
-    Args:
-        config_file: Path to the TSV configuration file
-
-    Returns:
-        DataFrame containing the validated configuration
-    """
-    try:
-        config = pd.read_csv(config_file, sep="\t")
-        required_columns = ["genome", "universe", "media_file", "medium_id"]
-
-        # Check for required columns
-        missing_cols = set(required_columns) - set(config.columns)
-        if missing_cols:
-            print(f"Error: Missing required columns in config file: {missing_cols}")
-            sys.exit(1)
-
-        # Validate file existence
-        for col in ["genome", "universe", "media_file"]:
-            invalid_files = [f for f in config[col] if not os.path.isfile(f)]
-            if invalid_files:
-                print(f"Error: Following {col} files not found:")
-                for f in invalid_files:
-                    print(f"  - {f}")
-                sys.exit(1)
-
-        return config
-
-    except Exception as e:
-        print(f"Error reading config file: {str(e)}")
-        sys.exit(1)
-
-
-def validate_input_files(
-    genomes: Union[str, List[str]],
-    universe_files: Union[str, List[str]],
-    media_file: str,
-    medium_id: str,
-) -> Tuple[List[str], Dict[str, Dict[str, str]]]:
-    """
-    Validate input files and create parameter mapping.
-    """
-    try:
-        # Convert single inputs to lists
-        genome_files = [genomes] if isinstance(genomes, str) else genomes
-        universe_files = (
-            [universe_files] if isinstance(universe_files, str) else universe_files
-        )
-
-        # Validate all files exist
-        for genome in genome_files:
-            if not os.path.isfile(genome):
-                print(f"Error: Genome file {genome} not found")
-                sys.exit(1)
-
-        if len(universe_files) == 1:
-            universe_files = universe_files * len(genome_files)
-        elif len(universe_files) != len(genome_files):
-            print(
-                f"Error: Number of universe files ({len(universe_files)}) "
-                f"does not match number of genome files ({len(genome_files)})"
-            )
-            sys.exit(1)
-
-        # Create parameter mapping
-        params_map = {}
-        for genome, universe in zip(genome_files, universe_files):
-            params_map[genome] = {
-                "genome": genome,
-                "universe": universe,
-                "media_file": media_file,
-                "medium_id": medium_id,
-            }
-
-        return genome_files, params_map
-    except Exception as e:
-        print(f"Error validating input files: {str(e)}")
-        sys.exit(1)
-
-
-def carve_genome(genome_path: str, params: dict) -> None:
-    """
-    Process a single genome file with CarveMe.
-    """
-    try:
-        output_file = os.path.join(
-            params["outdir"],
-            f"{os.path.splitext(os.path.basename(genome_path))[0]}.xml",
-        )
-
-        genome_params = params["genome_params"][genome_path]
-
-        carve_command = [
-            "carve",
-            "--solver",
-            "scip",
-            "-o",
-            output_file,
-            "--universe-file",
-            genome_params["universe"],
-            "--init",
-            genome_params["medium_id"],
-            "--gapfill",
-            genome_params["medium_id"],
-            "--mediadb",
-            genome_params["media_file"],
-            genome_path,  # Using the path directly instead of from params
-        ]
-
-        # Debug info
-        print("\nDebug - Command details:")
-        print(f"Using genome path: {genome_path}")
-        print(f"Full command: {' '.join(carve_command)}")
-
-        print(f"Processing {os.path.basename(genome_path)}")
-        print(f"  Universe: {genome_params['universe']}")
-        print(f"  Media: {genome_params['media_file']}")
-        print(f"  Medium ID: {genome_params['medium_id']}")
-
-        subprocess.run(carve_command, check=True)
-        print(f"Completed processing {os.path.basename(genome_path)}")
-
-    except Exception as e:
-        print(f"Error processing {os.path.basename(genome_path)}: {str(e)}")
-        raise
-
-
-def carve_genomes(genome_params: Dict[str, Dict[str, str]], outdir: str) -> None:
-    """
-    Execute carve commands in parallel for all input files.
-    """
-    try:
-        os.makedirs(outdir, exist_ok=True)
-
-        params = {"outdir": outdir, "genome_params": genome_params}
-        genome_files = list(genome_params.keys())
-        for genome_file in genome_files:
-            carve_genome(genome_file, params)
-
-    except Exception as e:
-        print(f"Error in carve_genomes: {str(e)}")
-        sys.exit(1)
+def get_default_processes():
+    """Get default number of processes (n_threads - 1)."""
+    return max(1, multiprocessing.cpu_count() - 1)
 
 
 def parse_arguments() -> argparse.Namespace:
     """Parse command line arguments."""
-    try:
-        parser = argparse.ArgumentParser(
-            description="Parallel CarveMe processing for metabolic model reconstruction."
-        )
+    parser = argparse.ArgumentParser(
+        description="CarveMe wrapper for metabolic model reconstruction using input files."
+    )
+    # Convert --input to positional argument
+    parser.add_argument(
+        "input",
+        help="Path to TSV input file with columns: genome, universe, media_file, medium_id",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        required=True,
+        help="Output folder for generated models",
+    )
+    # TSV flag for parallel processing
+    parser.add_argument(
+        "--tsv",
+        action="store_true",
+        help="Interpret input file as a TSV file with columns: genome, universe, media_file, medium_id",
+    )
+    # Add back processes argument with smart default
+    parser.add_argument(
+        "-p",
+        "--processes",
+        type=int,
+        default=get_default_processes(),
+        help=f"Number of processes to use for parallel genome processing (default: {get_default_processes()})",
+    )
 
-        # Add config file option
-        parser.add_argument(
-            "--config",
-            help="Path to TSV configuration file with columns: genome, universe, media_file, medium_id",
-        )
+    # Rest of arguments remain the same
+    input_type_args = parser.add_mutually_exclusive_group()
+    input_type_args.add_argument(
+        "--dna", action="store_true", help="Build from DNA fasta file"
+    )
+    input_type_args.add_argument(
+        "--egg", action="store_true", help="Build from eggNOG-mapper output file"
+    )
+    input_type_args.add_argument(
+        "--diamond", action="store_true", help=argparse.SUPPRESS
+    )
+    input_type_args.add_argument(
+        "--refseq",
+        action="store_true",
+        help="Download genome from NCBI RefSeq and build",
+    )
 
-        # Original arguments
-        parser.add_argument(
-            "--genomes", nargs="+", help="Path(s) to input genome file(s)"
-        )
-        parser.add_argument("--media_file", help="Path to the media file")
-        parser.add_argument("--medium_id", help="ID of the medium")
-        parser.add_argument(
-            "--universe_file",
-            nargs="+",
-            help="Path to universe file(s). If single file, will be used for all genomes",
-        )
-        parser.add_argument(
-            "--outdir", default="./results", help="Directory to save output XML files"
-        )
+    parser.add_argument(
+        "--diamond-args", help="Additional arguments for running diamond"
+    )
+    sbml = parser.add_mutually_exclusive_group()
+    sbml.add_argument(
+        "--cobra", action="store_true", help="Output SBML in old cobra format"
+    )
+    sbml.add_argument(
+        "--fbc2", action="store_true", help="Output SBML in sbml-fbc2 format"
+    )
+    parser.add_argument(
+        "-n", "--ensemble", type=int, help="Build model ensemble with N models"
+    )
+    parser.add_argument("--soft", help="Soft constraints file")
+    parser.add_argument("--hard", help="Hard constraints file")
+    parser.add_argument(
+        "--reference", help="Manually curated model of a close reference species"
+    )
+    parser.add_argument(
+        "--solver",
+        default="scip",
+        help="Select MILP solver. Available options: cplex, gurobi, scip [default]",
+    )
+    parser.add_argument(
+        "--default-score", type=float, default=-1.0, help=argparse.SUPPRESS
+    )
+    parser.add_argument(
+        "--uptake-score", type=float, default=0.0, help=argparse.SUPPRESS
+    )
+    parser.add_argument("--soft-score", type=float, default=1.0, help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--reference-score", type=float, default=0.0, help=argparse.SUPPRESS
+    )
+    parser.add_argument("--blind-gapfill", action="store_true", help=argparse.SUPPRESS)
 
-        args = parser.parse_args()
+    return parser.parse_args()
 
-        # Validate that either config file or all required arguments are provided
-        if args.config is None and (
-            args.genomes is None
-            or args.media_file is None
-            or args.medium_id is None
-            or args.universe_file is None
-        ):
-            parser.error(
-                "Either --config or all of --genomes, --media_file, --medium_id, "
-                "and --universe_file must be provided"
-            )
 
-        return args
-    except Exception as e:
-        print(f"Error parsing arguments: {str(e)}")
-        sys.exit(1)
+def build_carve_command(args) -> list:
+    """Build the CarveMe command with all specified arguments."""
+    # Changed to use positional input argument
+    cmd = ["carve", args.input, "-o", args.output]
+
+    # Add TSV flag if provided along with processes
+    if args.tsv:
+        cmd.append("--tsv")
+        # Only add processes argument when using TSV mode
+        cmd.extend(["--processes", str(args.processes)])
+
+    # Add solver selection
+    cmd.extend(["--solver", args.solver])
+
+    # Rest of the command building remains the same
+    if args.dna:
+        cmd.append("--dna")
+    elif args.egg:
+        cmd.append("--egg")
+    elif args.diamond:
+        cmd.append("--diamond")
+    elif args.refseq:
+        cmd.append("--refseq")
+
+    if args.diamond_args:
+        cmd.extend(["--diamond-args", args.diamond_args])
+
+    if args.cobra:
+        cmd.append("--cobra")
+    elif args.fbc2:
+        cmd.append("--fbc2")
+
+    if args.ensemble:
+        cmd.extend(["-n", str(args.ensemble)])
+
+    if args.soft:
+        cmd.extend(["--soft", args.soft])
+    if args.hard:
+        cmd.extend(["--hard", args.hard])
+    if args.reference:
+        cmd.extend(["--reference", args.reference])
+
+    if args.default_score != -1.0:
+        cmd.extend(["--default-score", str(args.default_score)])
+    if args.uptake_score != 0.0:
+        cmd.extend(["--uptake-score", str(args.uptake_score)])
+    if args.soft_score != 1.0:
+        cmd.extend(["--soft-score", str(args.soft_score)])
+    if args.reference_score != 0.0:
+        cmd.extend(["--reference-score", str(args.reference_score)])
+    if args.blind_gapfill:
+        cmd.append("--blind-gapfill")
+
+    return cmd
 
 
 def main() -> None:
     """Main function."""
+    warnings.filterwarnings("ignore", module="pyscipopt")
     try:
         args = parse_arguments()
 
-        if args.config:
-            # Use config file
-            config = read_config_file(args.config)
-            genome_params = {}
-            for _, row in config.iterrows():
-                genome_params[row["genome"]] = {
-                    "genome": row["genome"],
-                    "universe": row["universe"],
-                    "media_file": row["media_file"],
-                    "medium_id": row["medium_id"],
-                }
-        else:
-            # Use command line arguments
-            _, genome_params = validate_input_files(
-                args.genomes,
-                (
-                    args.universe_file[0]
-                    if len(args.universe_file) == 1
-                    else args.universe_file
-                ),
-                args.media_file,
-                args.medium_id,
-            )
+        # Create output directory if it doesn't exist
+        os.makedirs(args.output, exist_ok=True)
 
-        carve_genomes(genome_params, args.outdir)
+        # Build and run CarveMe command
+        carve_command = build_carve_command(args)
+
+        print("Running CarveMe with command:")
+        print(" ".join(carve_command))
+
+        subprocess.run(carve_command, check=True)
+        print("CarveMe processing completed successfully")
+
+    except subprocess.CalledProcessError as e:
+        print(f"CarveMe execution failed: {str(e)}")
+        exit(1)
     except Exception as e:
-        print(f"Error in main: {str(e)}")
-        sys.exit(1)
+        print(f"Error: {str(e)}")
+        exit(1)
 
 
 if __name__ == "__main__":
