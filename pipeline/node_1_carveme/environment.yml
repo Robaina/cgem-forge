@@ -8,9 +8,10 @@ dependencies:
   - diamond
   - pyscipopt
   - pip
+  - git
   - pip:
-      - numpy
-      - scipy
-      - sympy
-      - python-libsbml
-      - carveme
+    - numpy
+    - scipy
+    - sympy
+    - python-libsbml
+    - git+https://github.com/Robaina/carveme_expanded_universe.git
