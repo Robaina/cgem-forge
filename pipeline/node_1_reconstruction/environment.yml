@@ -4,9 +4,12 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python
-  - diamond
-  - pyscipopt
+  - python=3.12
+  - pyscipopt=5.4.1
+  - scip=9.2.1
+  - reframed=1.5.3
+  - carveme=1.6.2
+  - diamond=2.0.15
   - pip
   - git
   - pip:

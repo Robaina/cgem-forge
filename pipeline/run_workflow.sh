@@ -28,12 +28,15 @@ MAX_UPTAKE=10.0
 ABUNDANCE_CUTOFF=0.01
 GROWTH_TRADEOFF=0.5
 SOLVER="hybrid"
+cGEM_EXCHANGE_STRATEGY="pFBA"
+ABS_TOL=1e-8
+REL_TOL=1e-6
 SANKEY_FLUX_CUTOFF=0.1
 
 # Docker images
-CARVEME_IMAGE="ghcr.io/new-atlantis-labs/cgem-forge-reconstruction:latest"
-MICOM_IMAGE="ghcr.io/new-atlantis-labs/cgem-forge-analysis:latest"
-VIZ_IMAGE="ghcr.io/new-atlantis-labs/cgem-forge-visualization:latest"
+RECONSTRUCTION_IMAGE="ghcr.io/new-atlantis-labs/cgem-forge-reconstruction:latest"
+ANALYSIS_IMAGE="ghcr.io/new-atlantis-labs/cgem-forge-analysis:latest"
+VISUALIZATION_IMAGE="ghcr.io/new-atlantis-labs/cgem-forge-visualization:latest"
 
 # ========== HELPER FUNCTIONS ==========
 function log_step() {
@@ -61,22 +64,22 @@ docker run --rm \
     -v "${BASE_DIR}:/app/cgem-forge" \
     -v "${GENOME_TABLE}:/app/input.tsv" \
     -v "${RECONSTRUCTION_OUTPUT}:/app/output" \
-    ${CARVEME_IMAGE} \
+    ${RECONSTRUCTION_IMAGE} \
     /app/input.tsv \
     -o /app/output \
-    -p ${THREADS_CARVEME} \
+    -p "${THREADS_CARVEME}" \
     --tsv
 
 log_step "2. Getting medium from media database"
 docker run --rm \
     -v "${DATA_DIR}:/app/data" \
     -v "${ANALYSIS_OUTPUT}:/app/results" \
-    ${MICOM_IMAGE} \
+    ${ANALYSIS_IMAGE} \
     get_medium_from_media_db \
     --media-db /app/data/media/media_db.tsv \
     --medium-id "${MEDIUM_ID}" \
     --compartment "${COMPARTMENT}" \
-    --max-uptake ${MAX_UPTAKE} \
+    --max-uptake "${MAX_UPTAKE}" \
     --outfile /app/results/marine_media.tsv
 
 log_step "3. Building taxa table"
@@ -84,7 +87,7 @@ docker run --rm \
     -v "${TESTS_DATA_DIR}:/app/data" \
     -v "${RECONSTRUCTION_OUTPUT}:/app/gems_scip" \
     -v "${ANALYSIS_OUTPUT}:/app/results" \
-    ${MICOM_IMAGE} \
+    ${ANALYSIS_IMAGE} \
     build_taxa_table \
     --sample_id "${SAMPLE_ID}" \
     --abundances /app/data/abundances.tsv \
@@ -96,32 +99,36 @@ docker run --rm \
     -v "${ANALYSIS_OUTPUT}:/app/data" \
     -v "${ANALYSIS_OUTPUT}:/app/results" \
     -v "${RECONSTRUCTION_OUTPUT}:/app/gems_scip" \
-    ${MICOM_IMAGE} \
+    ${ANALYSIS_IMAGE} \
     build_cgem \
     --taxa_table /app/data/micom_database.tsv \
     --outdir /app/results \
-    --abundance_cutoff ${ABUNDANCE_CUTOFF} \
+    --abundance_cutoff "${ABUNDANCE_CUTOFF}" \
     --gems_dir /app/gems_scip \
-    --threads ${THREADS_EXCHANGES} \
-    --solver "${SOLVER}"
+    --threads "${THREADS_EXCHANGES}" \
+    --solver ${SOLVER}
 
 log_step "5. Calculating exchange fluxes"
 docker run --rm \
     -v "${ANALYSIS_OUTPUT}:/app/results" \
-    ${MICOM_IMAGE} \
+    "${ANALYSIS_IMAGE}" \
     get_exchanges \
     --manifest /app/results/manifest.csv \
     --outdir /app/results \
     --media_file /app/results/marine_media.tsv \
-    --growth_tradeoff ${GROWTH_TRADEOFF} \
-    --threads ${THREADS_MICOM} \
-    --out_exchanges /app/results/exchanges.tsv
+    --growth_tradeoff "${GROWTH_TRADEOFF}" \
+    --threads "${THREADS_MICOM}" \
+    --out_exchanges /app/results/exchanges.tsv \
+    --strategy "${cGEM_EXCHANGE_STRATEGY}" \
+    --presolve \
+    --rtol "${REL_TOL}" \
+    --atol "${ABS_TOL}" \
 
 log_step "6. Generating network visualization"
 docker run --rm \
     -v "${ANALYSIS_OUTPUT}:/data" \
     -v "${VISUALIZATION_OUTPUT}:/app/results" \
-    ${VIZ_IMAGE} \
+    ${VISUALIZATION_IMAGE} \
     --exchanges-file /data/exchanges.tsv \
     --flux-cutoff "top10" \
     --visualization-type network
@@ -130,7 +137,7 @@ log_step "7. Generating heatmap visualization"
 docker run --rm \
     -v "${ANALYSIS_OUTPUT}:/data" \
     -v "${VISUALIZATION_OUTPUT}:/app/results" \
-    ${VIZ_IMAGE} \
+    ${VISUALIZATION_IMAGE} \
     --exchanges-file /data/exchanges.tsv \
     --visualization-type heatmap \
     --output-dir /app/results \
@@ -141,7 +148,7 @@ log_step "8. Generating Sankey diagram visualization"
 docker run --rm \
     -v "${ANALYSIS_OUTPUT}:/data" \
     -v "${VISUALIZATION_OUTPUT}:/app/results" \
-    ${VIZ_IMAGE} \
+    ${VISUALIZATION_IMAGE} \
     --exchanges-file /data/exchanges.tsv \
     --visualization-type sankey \
     --output-dir /app/results \

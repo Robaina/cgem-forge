@@ -79,23 +79,38 @@ def build_cgem(args):
 
 def get_exchanges(args):
     """Retrieves exchange reactions for a community GEM."""
-    command = [
-        "python",
-        f"{PARENT_DIR}/get_exchanges.py",
-        "--manifest",
-        args.manifest,
-        "--outdir",
-        args.outdir,
-        "--media_file",
-        args.media_file,
-        "--growth_tradeoff",
-        str(args.growth_tradeoff),
-        "--threads",
-        str(args.threads),
-        "--out_exchanges",
-        args.out_exchanges,
-    ]
-    subprocess.run(command, check=True)
+    command = ["python", f"{PARENT_DIR}/get_exchanges.py"]
+
+    # Required arguments
+    required_args = {
+        "--manifest": args.manifest,
+        "--outdir": args.outdir,
+        "--media_file": args.media_file,
+    }
+
+    # Optional arguments (only include if not None)
+    optional_args = {
+        "--growth_tradeoff": args.growth_tradeoff,
+        "--threads": args.threads,
+        "--out_exchanges": args.out_exchanges,
+        "--atol": args.atol,
+        "--rtol": args.rtol,
+        "--strategy": args.strategy,
+    }
+
+    # Add required arguments
+    for flag, value in required_args.items():
+        command.extend([flag, str(value)])
+
+    # Add optional arguments if they're not None
+    for flag, value in optional_args.items():
+        if value is not None:
+            command.extend([flag, str(value)])
+
+    # Add presolve flag only if True
+    if args.presolve:
+        command.append("--presolve")
+        subprocess.run(command, check=True)
 
 
 def get_elasticities(args):
@@ -213,6 +228,22 @@ def main():
         "--out_exchanges",
         default="exchanges.tsv",
         help="Output file for exchange reactions.",
+    )
+    parser_exchanges.add_argument(
+        "--atol", type=float, default=1e-6, help="Absolute tolerance for the solver."
+    )
+    parser_exchanges.add_argument(
+        "--rtol", type=float, default=None, help="Relative tolerance for the solver."
+    )
+    parser_exchanges.add_argument(
+        "--strategy",
+        default="minimal imports",
+        help="Strategy for setting exchange reactions.",
+    )
+    parser_exchanges.add_argument(
+        "--presolve",
+        action="store_true",
+        help="Whether to presolve the model before optimization.",
     )
     parser_exchanges.set_defaults(func=get_exchanges)
 

@@ -1,2 +1,2 @@
-# Python 3.10
-micom
+osqp==0.6.2
+micom==0.36.4

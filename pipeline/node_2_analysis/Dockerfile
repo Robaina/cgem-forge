@@ -2,6 +2,12 @@ FROM python:3.10
 
 WORKDIR /app
 
+# Install system dependencies including CMake
+RUN apt-get update && \
+    apt-get install -y cmake && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt /app/requirements.txt
 COPY script.py /app/
 COPY build_taxa_table.py /app/

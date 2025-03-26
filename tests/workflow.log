@@ -1,0 +1,40 @@
+=====================================
+STEP: Creating output directories
+=====================================
+=====================================
+STEP: 1. Generating genome-scale metabolic models
+=====================================
+Running diamond for the first time, please wait while we build the internal database...
+Running CarveMe with command:
+carve /app/input.tsv -o /app/output --tsv --processes 8 --solver scip
+CarveMe processing completed successfully
+=====================================
+STEP: 2. Getting medium from media database
+=====================================
+=====================================
+STEP: 3. Building taxa table
+=====================================
+=====================================
+STEP: 4. Building community genome-scale metabolic model (cGEM)
+=====================================
+Running ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:01:36
+Model building completed. Manifest:
+      sample_id                 file
+0  TARA_ARC_108  TARA_ARC_108.pickle
+=====================================
+STEP: 5. Calculating exchange fluxes
+=====================================
+Running ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:28
+Growth simulations completed.
+=====================================
+STEP: 6. Generating network visualization
+=====================================
+=====================================
+STEP: 7. Generating heatmap visualization
+=====================================
+=====================================
+STEP: 8. Generating Sankey diagram visualization
+=====================================
+=====================================
+Workflow completed successfully!
+=====================================

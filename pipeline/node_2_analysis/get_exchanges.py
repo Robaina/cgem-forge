@@ -26,6 +26,29 @@ def parse_arguments():
         default="results/micom/exchanges.tsv",
         help="Path to the output TSV file.",
     )
+    parser.add_argument(
+        "--atol",
+        type=float,
+        default=1e-6,
+        help="Absolute tolerance for the solver.",
+    )
+    parser.add_argument(
+        "--rtol",
+        type=float,
+        default=None,
+        help="Relative tolerance for the solver.",
+    )
+    parser.add_argument(
+        "--strategy",
+        type=str,
+        default="minimal imports",
+        help="Strategy for setting exchange reactions.",
+    )
+    parser.add_argument(
+        "--presolve",
+        action="store_true",
+        help="Whether to presolve the model before optimization.",
+    )
     return parser.parse_args()
 
 
@@ -49,6 +72,10 @@ def run_growth_simulations(
     tradeoff: float,
     threads: int,
     output_file: str,
+    atol=1e-6,
+    rtol=None,
+    strategy="minimal imports",
+    presolve=False,
 ):
     manifest = pd.read_csv(manifest_file, sep=",")
     for _, row in manifest.iterrows():
@@ -60,6 +87,10 @@ def run_growth_simulations(
             medium=medium,
             tradeoff=tradeoff,
             threads=threads,
+            atol=atol,
+            rtol=rtol,
+            strategy=strategy,
+            presolve=presolve,
         )
         res.exchanges[res.exchanges.taxon != "medium"].to_csv(output_file, sep="\t")
     return res
@@ -74,6 +105,10 @@ def main():
         args.growth_tradeoff,
         args.threads,
         args.out_exchanges,
+        args.atol,
+        args.rtol,
+        args.strategy,
+        args.presolve,
     )
     print("Growth simulations completed.")
 
