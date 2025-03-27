@@ -23,8 +23,8 @@ RUN python -m pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Download and install the wheel file
-RUN curl -L https://github.com/Robaina/cgem-forge/raw/main/dist/cgem_forge-0.0.2-py3-none-any.whl -o cgem_forge-0.0.2-py3-none-any.whl && \
-    pip install cgem_forge-0.0.2-py3-none-any.whl && \
-    rm cgem_forge-0.0.2-py3-none-any.whl
+RUN curl -L https://github.com/Robaina/cgem-forge/raw/main/dist/cgemforge-0.0.2-py3-none-any.whl -o cgemforge-0.0.2-py3-none-any.whl && \
+    pip install cgemforge-0.0.2-py3-none-any.whl && \
+    rm cgemforge-0.0.2-py3-none-any.whl
 
 ENTRYPOINT ["python", "script.py"]

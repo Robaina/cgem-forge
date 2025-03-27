@@ -8,7 +8,6 @@ dependencies:
   - pyscipopt
   - scip=9.2.1
   - reframed
-  - carveme
   - diamond
   - pip
   - git
