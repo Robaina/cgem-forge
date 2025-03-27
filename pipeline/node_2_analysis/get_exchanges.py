@@ -1,8 +1,7 @@
 import argparse
 import pandas as pd
+from grow_workflow import grow
 from micom import load_pickle
-from micom.workflows import grow
-# from grow_workflow import grow
 
 
 def parse_arguments():
@@ -50,6 +49,18 @@ def parse_arguments():
         action="store_true",
         help="Whether to presolve the model before optimization.",
     )
+    parser.add_argument(
+        "--min_growth_cutoff",
+        type=float,
+        default=None,
+        help="Minimal growth requirement for individual taxa. Set to 0 or leave unset for unconstrained growth.",
+    )
+    parser.add_argument(
+        "--growth_pattern",
+        type=str,
+        default="growth",
+        help="Pattern to identify growth reactions (default: 'growth'). Use 'biomass' or other patterns if your models use different naming conventions.",
+    )
     return parser.parse_args()
 
 
@@ -77,6 +88,8 @@ def run_growth_simulations(
     rtol=None,
     strategy="minimal imports",
     presolve=False,
+    min_growth_cutoff=None,
+    growth_pattern="growth",
 ):
     manifest = pd.read_csv(manifest_file, sep=",")
     for _, row in manifest.iterrows():
@@ -92,6 +105,8 @@ def run_growth_simulations(
             rtol=rtol,
             strategy=strategy,
             presolve=presolve,
+            min_growth_cutoff=min_growth_cutoff,
+            growth_pattern=growth_pattern,
         )
         res.exchanges[res.exchanges.taxon != "medium"].to_csv(output_file, sep="\t")
     return res
@@ -110,8 +125,15 @@ def main():
         args.rtol,
         args.strategy,
         args.presolve,
+        args.min_growth_cutoff,
+        args.growth_pattern,
     )
     print("Growth simulations completed.")
+    
+    # Print information about growth constraints if they were used
+    if args.min_growth_cutoff is not None and args.min_growth_cutoff > 0:
+        print(f"Individual taxa were constrained to grow at a minimum rate of {args.min_growth_cutoff}")
+        print(f"Growth reactions were identified using the pattern '{args.growth_pattern}'")
 
 
 if __name__ == "__main__":

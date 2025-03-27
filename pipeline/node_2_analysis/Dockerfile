@@ -9,7 +9,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/requirements.txt
-COPY script.py /app/
+COPY entrypoint.py /app/
 COPY build_taxa_table.py /app/
 COPY build_cgem.py /app/
 COPY cgem_utils.py /app/
@@ -27,4 +27,4 @@ RUN curl -L https://github.com/Robaina/cgem-forge/raw/main/dist/cgemforge-0.0.2-
     pip install cgemforge-0.0.2-py3-none-any.whl && \
     rm cgemforge-0.0.2-py3-none-any.whl
 
-ENTRYPOINT ["python", "script.py"]
+ENTRYPOINT ["python", "entrypoint.py"]
