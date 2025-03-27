@@ -6,16 +6,16 @@ from micom import load_pickle
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Calculate elasticities using MICOM.")
     parser.add_argument(
-        "cgem_file", type=str, help="Path to the CGEM model file (Pickle format)."
+        "--cgem_pickle", type=str, help="Path to the CGEM model file (Pickle format)."
     )
     parser.add_argument(
-        "--fraction",
+        "--growth_tradeoff",
         type=float,
         default=0.5,
-        help="Fraction for elasticity calculation.",
+        help="Growth tradeoff parameter for elasticity calculation.",
     )
     parser.add_argument(
-        "--output",
+        "--out_elasticities",
         type=str,
         default="results/micom/elasticities.tsv",
         help="Path to the output TSV file.",
@@ -32,7 +32,9 @@ def calculate_elasticities(cgem_file: str, fraction: float, output_file: str):
 
 def main():
     args = parse_arguments()
-    eps = calculate_elasticities(args.cgem_file, args.fraction, args.output)
+    eps = calculate_elasticities(
+        args.cgem_pickle, args.growth_tradeoff, args.out_elasticities
+    )
     print("Elasticity calculations completed.")
 
 

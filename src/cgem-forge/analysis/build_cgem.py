@@ -8,16 +8,19 @@ def parse_arguments():
         description="Build MICOM models from taxonomy data."
     )
     parser.add_argument(
-        "data_file", type=str, help="Path to the MICOM database TSV file."
+        "--taxa_table", type=str, help="Path to the MICOM database TSV file."
     )
     parser.add_argument(
-        "--out_folder",
+        "--outdir",
         type=str,
         default="results/micom",
         help="Output folder for results.",
     )
     parser.add_argument(
-        "--cutoff", type=float, default=1e-2, help="Cutoff value for the build process."
+        "--abundance_cutoff",
+        type=float,
+        default=1e-2,
+        help="Cutoff value for the build process.",
     )
     parser.add_argument(
         "--threads", type=int, default=2, help="Number of threads to use."
@@ -46,7 +49,7 @@ def build_models(
 def main():
     args = parse_arguments()
     manifest = build_models(
-        args.data_file, args.out_folder, args.cutoff, args.threads, args.solver
+        args.taxa_table, args.outdir, args.abundance_cutoff, args.threads, args.solver
     )
     print("Model building completed. Manifest:")
     print(manifest)

@@ -96,6 +96,8 @@ def get_exchanges(args):
         "--atol": args.atol,
         "--rtol": args.rtol,
         "--strategy": args.strategy,
+        "--min_growth_cutoff": args.min_growth_cutoff,  # New parameter
+        "--growth_pattern": args.growth_pattern,        # New parameter
     }
 
     # Add required arguments
@@ -110,7 +112,8 @@ def get_exchanges(args):
     # Add presolve flag only if True
     if args.presolve:
         command.append("--presolve")
-        subprocess.run(command, check=True)
+    
+    subprocess.run(command, check=True)
 
 
 def get_elasticities(args):
@@ -244,6 +247,17 @@ def main():
         "--presolve",
         action="store_true",
         help="Whether to presolve the model before optimization.",
+    )
+    parser_exchanges.add_argument(
+        "--min_growth_cutoff",
+        type=float,
+        default=None,
+        help="Minimal growth requirement for individual taxa. Set to a positive value to constrain individual growth.",
+    )
+    parser_exchanges.add_argument(
+        "--growth_pattern",
+        default="growth",
+        help="Pattern to identify growth reactions (default: 'growth'). Use 'biomass' or other patterns if models use different naming conventions.",
     )
     parser_exchanges.set_defaults(func=get_exchanges)
 

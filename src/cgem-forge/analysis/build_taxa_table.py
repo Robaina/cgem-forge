@@ -8,15 +8,21 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build a TSV table from given arguments."
     )
-    parser.add_argument("sample_id", type=str, help="Sample ID")
-    parser.add_argument("abundance", type=str, help="Path to the abundance TSV file")
+    parser.add_argument("--sample_id", type=str, help="Sample ID")
+    parser.add_argument("--abundances", type=str, help="Path to the abundance TSV file")
     parser.add_argument(
-        "gem_directory",
+        "--gems_dir",
         type=str,
         help="Path to the directory where GEM files are stored",
     )
     parser.add_argument(
-        "--output", type=str, help="Path to the output TSV file", default="output.tsv"
+        "--out_taxatable",
+        type=str,
+        help="Path to the output TSV file",
+        default="output.tsv",
+    )
+    parser.add_argument(
+        "--base_path", help="Base directory path for external file system", default=""
     )
     return parser.parse_args()
 
@@ -43,13 +49,16 @@ def build_output_table(
     abundance_data: Dict[str, Tuple[str, str]],
     gem_directory: str,
     id_extensions: List[Tuple[str, str]],
+    base_path: str = "",
 ) -> List[List[str]]:
     output_data = []
     for id, extension in id_extensions:
-        abundance, taxonomy = abundance_data.get(
-            id, ("0", "Unknown")
-        )  # Default values if id not found
-        file_path = Path(gem_directory) / f"{id}{extension}"
+        abundance, taxonomy = abundance_data.get(id, ("0", "Unknown"))
+        original_file_path = Path(gem_directory) / f"{id}{extension}"
+        if base_path:
+            file_path = Path(base_path) / f"{id}{extension}"
+        else:
+            file_path = original_file_path
         output_data.append([sample_id, id, abundance, taxonomy, str(file_path)])
     return output_data
 
@@ -63,12 +72,16 @@ def write_output_table(output_data: List[List[str]], output_file: str) -> None:
 
 def main() -> None:
     args = parse_arguments()
-    abundance_data = read_abundance_file(args.abundance)
-    id_extensions = get_ids_and_extensions_from_gem_directory(args.gem_directory)
+    abundance_data = read_abundance_file(args.abundances)
+    id_extensions = get_ids_and_extensions_from_gem_directory(args.gems_dir)
     output_data = build_output_table(
-        args.sample_id, abundance_data, args.gem_directory, id_extensions
+        args.sample_id,
+        abundance_data,
+        args.gems_dir,
+        id_extensions,
+        args.base_path,
     )
-    write_output_table(output_data, args.output)
+    write_output_table(output_data, args.out_taxatable)
 
 
 if __name__ == "__main__":

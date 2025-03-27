@@ -28,7 +28,7 @@ classifiers = [
 ]
 packages = [{ include = "cgem-forge", from = "src" }]
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.10"
 # [tool.poetry.scripts]
 # cgem-forge = "cgem-forge.cli:main"
 
