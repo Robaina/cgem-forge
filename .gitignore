@@ -9,4 +9,3 @@ build_docker_images.sh
 dev.ipynb
 legacy/*
 __pycache__
-dist/*
