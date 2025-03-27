@@ -3,7 +3,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "cgem-forge"
+name = "cgemforge"
 version = "0.0.2"
 description = "Reconstructing microbial communities from genomic data"
 license = "Apache-2.0"
@@ -26,11 +26,11 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Natural Language :: English",
 ]
-packages = [{ include = "cgem-forge", from = "src" }]
+packages = [{ include = "cgemforge", from = "src" }]
 [tool.poetry.dependencies]
 python = "^3.10"
 # [tool.poetry.scripts]
-# cgem-forge = "cgem-forge.cli:main"
+# cgem-forge = "cgemforge.cli:main"
 
 [tool.ruff]
 select = [
@@ -47,4 +47,4 @@ ignore = [
 ]
 
 [tool.ruff.isort]
-known-first-party = ["cgem-forge"]
+known-first-party = ["cgemforge"]
